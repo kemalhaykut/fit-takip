@@ -1,0 +1,66 @@
+name: APK oluştur
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.50.1
+          cache: true
+
+      - name: Android projesini oluştur
+        run: |
+          flutter create --project-name fit_takip --org com.fittakip --platforms android .
+          rm -rf test
+          python3 tools/patch_android.py
+
+      - name: Fotoğrafları indir
+        run: bash tools/download_photos.sh
+
+      - name: Sabit imza anahtarını kullan (güncellemeler sorunsuz kurulsun)
+        run: |
+          mkdir -p ~/.android
+          if [ -f android_keystore/debug.keystore ]; then cp android_keystore/debug.keystore ~/.android/debug.keystore; fi
+
+      - name: Paketler ve ikon
+        run: |
+          flutter pub get
+          dart run flutter_launcher_icons
+
+      - name: Kod kontrolü
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: APK derle
+        run: flutter build apk --release
+
+      - name: APK'yı adlandır
+        run: cp build/app/outputs/flutter-apk/app-release.apk FitTakip.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FitTakip-apk
+          path: FitTakip.apk
+
+      - name: Sürüm yayınla
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Fit Takip v1.0.${{ github.run_number }}
+          files: FitTakip.apk

@@ -1,0 +1,2 @@
+Bu klasördeki fotoğraflar GitHub derlemesi sırasında Unsplash'tan otomatik indirilir
+(ücretsiz Unsplash Lisansı). Elle bir şey yüklemene gerek yok.
